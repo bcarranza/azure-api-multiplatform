@@ -13,7 +13,6 @@ A pipeline is the best way to deployment resources in azure on autamtic, we will
   <li>ml-deploy-appservice.yml</li>
   <li>ml-deploy-azure-container-instaces.yml</li>
   <li>ml-deploy-azure-function.yml</li>
-  <li>ml-deploy-azure-function.yml</li>
   <li>ml-deploy-windows-vm.yml</li>
   <li>ml-deploy-linux-vm.yml</li>
   <li>ml-deploy-aks-vm.yml</li>
