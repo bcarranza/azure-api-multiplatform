@@ -1,9 +1,10 @@
 <#
     .Description
     This function create infrastructure base like : 1 resource group , azure insight, vault, 4 NSG (Networking Subnet groups), 1 database , 1 vm as bastion.
-    execution: ./ml-base-infrastructure.ps1 -suscription_name "Visual Studio Professional" -rsg_name "ml-resourcegroup" -rsg_location "EastUS" -vnet_name "ml-vnet" -vnet_addressprefix "10.0.0.0/16" -subnet1_name "ml-subnet-1" -subnet1_addressprefix "10.0.1.0/24" -subnet2_name "ml-subnet-2" -subnet2_addressprefix "10.0.2.0/24" -subnet3_name "ml-subnet-3" -subnet3_addressprefix "10.0.3.0/24" -subnet4_name "ml-subnet-4" -subnet4_addressprefix "10.0.4.0/24" -insight_name "ml-az-insight" -vault_name "ml-az-vault" -bastion_name "ml-bastion" -db_name "ml-db" db_object_name "ml-db-multi" -db_user "mluser" -db_pass "Th3P@ssw0rd01"
+    execution: ./ml-base-infrastructure.ps1 -suscription_name "Visual Studio Professional" -rsg_name "ml-resourcegroup" -rsg_location "EastUS" -vnet_name "ml-vnet" -vnet_addressprefix "10.0.0.0/16" -vm_local_admin_user "mluseradmin" -vm_local_admin_pass "Th3P@ssw0rd01" -subnet1_name "ml-subnet-1" -subnet1_addressprefix "10.0.1.0/24" -subnet2_name "ml-subnet-2" -subnet2_addressprefix "10.0.2.0/24" -subnet3_name "ml-subnet-3" -subnet3_addressprefix "10.0.3.0/24" -subnet4_name "ml-subnet-4" -subnet4_addressprefix "10.0.4.0/24" -insight_name "ml-az-insight" -vault_name "ml-az-vault" -bastion_name "ml-bastion" -db_name "ml-db" db_object_name "ml-db-multi" -db_user "mluser" -db_pass "Th3P@ssw0rd01"
     remove all resources in RSG: Remove-AzResourceGroup -Name $rsg_name -Force
     author: bayron.carranza
+    improvements this file needs: validations of existing resources
 #>
 param(
     [string]$suscription_name = "",
@@ -11,6 +12,8 @@ param(
     [string]$rsg_location = "",
     [string]$vnet_name = "",
     [string]$vnet_addressprefix = "",
+    [string]$vm_local_admin_user = "",
+    [string]$vm_local_admin_pass = "",
     [string]$subnet1_name = "",
     [string]$subnet1_addressprefix = "",
     [string]$subnet2_name = "",
@@ -62,7 +65,7 @@ param(
         AddressPrefix = $subnet1_addressprefix 
     }
     $subnetConfig1 = Add-AzVirtualNetworkSubnetConfig @subnet1
-    
+
     #associate subnet to vnet
     $virtualNetwork | Set-AzVirtualNetwork
 
@@ -102,17 +105,14 @@ param(
     #associate subnet to vnet
     $virtualNetwork | Set-AzVirtualNetwork
 
-    #create bastion
+    #Create bastion
     Write-Host "Creating bastion : " $bastion_name
-    $vm1 = @{
-        ResourceGroupName = $rsg_name
-        Location = $rsg_location
-        Name = $bastion_name
-        VirtualNetworkName = $vnet_name
-        SubnetName = $subnet1_name
-    }
-    New-AzVM @vm1 -AsJob
+    $vnetObject = Get-AzVirtualNetwork -ResourceGroupName $rsg_name -Name $vnet_name
+    Write-Host "get subnet id 1: "  $vnetObject.Subnets[0].Id
     
+
+    Write-Host "Subnets id: " $virtualNetwork.Subnets[1].Id
+    ./ml-base-infrastructure-vm.ps1 -vm_local_admin_user $vm_local_admin_user -vm_local_admin_pass $vm_local_admin_pass -vm_location $rsg_location -vm_subnet_id $vnetObject.Subnets[0].Id -rsg_name $rsg_name -vm_name "ml-bastion" -dns_name "mlmultiinfra" -public_ip $true -public_ip_name "ml-bastion-public-ip"
 
     #Create database
     # Create a server with a system wide unique server name
